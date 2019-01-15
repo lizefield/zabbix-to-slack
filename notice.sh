@@ -8,15 +8,27 @@ USERNAME='Zabbix'
 RECOVERSUB='^RECOVER(Y|ED)?$'
 
 if [[ "$SUBJECT" =~ ${RECOVERSUB} ]]; then
-	emoji=':o:'
+	EMOJI=':o:'
+  COLOR='good'
 elif [ "$SUBJECT" == 'OK' ]; then
-	emoji=':o:'
+	EMOJI=':o:'
+  COLOR='good'
 elif [ "$SUBJECT" == 'PROBLEM' ]; then
-	emoji=':x:'
+	EMOJI=':x:'
+  COLOR='danger'
 else
-	emoji=':exclamation:'
+	EMOJI=':exclamation:'
+  COLOR='#439FE0'
 fi
 
 text="${SUBJECT}: ${MESSAGE}"
-payload="{\"channel\": \"${CHANNEL//\"/\\\"}\", \"username\": \"${USERNAME//\"/\\\"}\", \"text\": \"${text//\"/\\\"}\", \"icon_emoji\": \"${emoji}\"}"
+payload="{
+    \"channel\": \"${CHANNEL//\"/\\\"}\",
+    \"username\": \"${USERNAME//\"/\\\"}\",
+    \"icon_emoji\": \"${EMOJI}\",
+    \"attachments\": [{
+      \"color\": \"${COLOR}\",
+      \"text\": \"${text//\"/\\\"}\"
+    }]
+  }"
 curl -H 'Content-Type:application/json' -H "Authorization:Bearer ${SLACK_TOKEN}" -d "${payload}" $SLACK_URL
