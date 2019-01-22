@@ -1,4 +1,5 @@
 #!/bin/bash
+ZABBIX_URL='http://18.182.183.219/zabbix/'
 SLACK_URL='https://slack.com/api/chat.postMessage'
 SLACK_TOKEN="$1"
 CHANNEL="$2"
@@ -7,28 +8,33 @@ MESSAGE="$4"
 USERNAME='Zabbix'
 RECOVERSUB='^RECOVER(Y|ED)?$'
 
-if [[ "$SUBJECT" =~ ${RECOVERSUB} ]]; then
-	EMOJI=':o:'
-  COLOR='good'
-elif [ "$SUBJECT" == 'OK' ]; then
-	EMOJI=':o:'
-  COLOR='good'
-elif [ "$SUBJECT" == 'PROBLEM' ]; then
-	EMOJI=':x:'
-  COLOR='danger'
+if [[ "${MESSAGE}" == *'Normal "Generic"'* ]]; then
+  COLOR="#91bbfc"
+elif [ "${SUBJECT%%:*}" == 'OK' ]; then
+  COLOR="good"
+elif [ "${SUBJECT%%:*}" == 'Resolved' ]; then
+  COLOR="good"
+elif [ "${SUBJECT%%:*}" == 'Problem' ]; then
+  COLOR="danger"
 else
-	EMOJI=':exclamation:'
-  COLOR='#439FE0'
+  COLOR="#808080"
 fi
 
-text="${SUBJECT}: ${MESSAGE}"
-payload="{
+MESSAGE=`echo ${MESSAGE} | sed -e 's/"//g'`
+PAYLOAD="{
     \"channel\": \"${CHANNEL//\"/\\\"}\",
     \"username\": \"${USERNAME//\"/\\\"}\",
-    \"icon_emoji\": \"${EMOJI}\",
     \"attachments\": [{
+      \"fallback\": \"${SUBJECT}\",
+      \"text\": \"${ZABBIX_URL}\",
       \"color\": \"${COLOR}\",
-      \"text\": \"${text//\"/\\\"}\"
+      \"fields\":[
+        {
+          \"title\": \"${SUBJECT%%:*}\",
+          \"value\": \"${MESSAGE}\",
+          \"short\": true
+        }
+      ]
     }]
   }"
-curl -H 'Content-Type:application/json' -H "Authorization:Bearer ${SLACK_TOKEN}" -d "${payload}" $SLACK_URL
+curl -H 'Content-Type:application/json' -H "Authorization:Bearer ${SLACK_TOKEN}" -d "${PAYLOAD}" $SLACK_URL
